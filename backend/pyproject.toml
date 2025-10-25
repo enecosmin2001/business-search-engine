@@ -1,0 +1,74 @@
+[project]
+name = "business-search-engine-backend"
+version = "0.1.0"
+description = "AI-powered business search engine with web scraping and LLM processing"
+authors = [
+    {name = "Ene Cosmin-Mihai", email = "enecosmin2001@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.14"
+license = {text = "MIT"}
+
+dependencies = [
+    # Web Framework
+    "fastapi~=0.120.0",
+    "uvicorn[standard]~=0.38.0",
+
+    # Task Queue
+    "celery~=5.5.3",
+    "redis~=7.0.0",
+    "flower~=2.0.1",
+
+    # Data Validation
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.1.0",
+
+    # Utilities
+    "python-dotenv~=1.0.1",
+
+]
+
+[dependency-groups]
+dev = [
+    "black~=25.9.0",
+    "ruff~=0.14.2",
+    "pyright>=1.1.407",
+
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py313']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+lint.select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "UP", # pyupgrade
+]
+lint.ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+

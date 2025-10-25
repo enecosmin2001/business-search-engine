@@ -1,0 +1,34 @@
+name: Python Code Quality Check
+on: [push]
+jobs:
+  lock-file:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - run: uv lock --locked
+        working-directory: ./backend
+  linting:
+    runs-on: ubuntu-latest
+    needs: [lock-file]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - run: uvx ruff check app
+        working-directory: ./backend
+  formatting:
+    runs-on: ubuntu-latest
+    needs: [lock-file]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - run: uvx ruff format --check app
+        working-directory: ./backend
+  type_checking:
+    runs-on: ubuntu-latest
+    needs: [lock-file]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - run: uv run pyright app
+        working-directory: ./backend
