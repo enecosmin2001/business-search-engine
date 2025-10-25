@@ -13,19 +13,15 @@ dependencies = [
     # Web Framework
     "fastapi~=0.120.0",
     "uvicorn[standard]~=0.38.0",
-
     # Task Queue
     "celery~=5.5.3",
     "redis~=7.0.0",
     "flower~=2.0.1",
-
     # Data Validation
     "pydantic>=2.6.0",
     "pydantic-settings>=2.1.0",
-
     # Utilities
     "python-dotenv~=1.0.1",
-
 ]
 
 [dependency-groups]
@@ -33,7 +29,7 @@ dev = [
     "black~=25.9.0",
     "ruff~=0.14.2",
     "pyright>=1.1.407",
-
+    "pre-commit>=4.3.0",
 ]
 
 [tool.black]
@@ -72,3 +68,8 @@ lint.ignore = [
     "C901",  # too complex
 ]
 
+[tool.pyright]
+exclude = [".venv"]
+pythonVersion = "3.14"
+venvPath = "."
+venv = ".venv"
