@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup
-      - run: uvx format --check app
+      - run: uvx ruff format --check app
         working-directory: ./backend
   type_checking:
     runs-on: ubuntu-latest
