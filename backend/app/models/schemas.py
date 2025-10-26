@@ -247,7 +247,7 @@ class TaskStatusResponse(BaseModel):
         description="Error message (if status is 'failed')",
     )
 
-    created_at: datetime = Field(
+    created_at: datetime | None = Field(
         ...,
         description="Task creation timestamp",
     )
