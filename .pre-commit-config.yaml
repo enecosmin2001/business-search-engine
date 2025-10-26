@@ -12,3 +12,5 @@ repos:
     rev: v1.1.407
     hooks:
     - id: pyright
+      language: system
+      args: ["--project", "backend/pyproject.toml"]

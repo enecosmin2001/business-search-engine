@@ -69,7 +69,9 @@ lint.ignore = [
 ]
 
 [tool.pyright]
-exclude = [".venv"]
 pythonVersion = "3.14"
 venvPath = "."
 venv = ".venv"
+typeCheckingMode = "strict"
+include = ["."]
+exclude = ["**/__pycache__", ".venv"]
