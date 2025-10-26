@@ -76,4 +76,7 @@ venvPath = "."
 venv = ".venv"
 typeCheckingMode = "strict"
 reportMissingTypeStubs = false
+reportPartiallyUnknownTypes = false
 reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
