@@ -72,3 +72,10 @@ celery_app.conf.update(
     task_retry_backoff_max=600,
     task_retry_jitter=True,
 )
+
+# Import tasks to register them
+from app.celery_app import tasks  # type: ignore # noqa
+
+_logger.info("Celery application configured successfully")
+_logger.info(f"Broker: {settings.CELERY_BROKER_URL}")
+_logger.info(f"Backend: {settings.CELERY_RESULT_BACKEND}")
