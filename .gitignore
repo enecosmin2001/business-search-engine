@@ -365,10 +365,10 @@ output/
 results/
 
 # LLM models (too large for git)
-models/
-*.bin
-*.gguf
-*.ggml
+# models/
+# *.bin
+# *.gguf
+# *.ggml
 
 # Browser profiles and caches
 .nodriver/
