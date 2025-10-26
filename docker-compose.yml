@@ -120,6 +120,23 @@ services:
     networks:
       - business-search-net
 
+  # Frontend - Next.js Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: business-search-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NODE_ENV=production
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - business-search-net
+
 volumes:
   redis_data:
     driver: local
