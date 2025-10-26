@@ -11,10 +11,6 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Install system dependencies for nodriver (Chromium)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Chromium and dependencies for nodriver
-    chromium \
-    chromium-driver \
-    # Additional dependencies
     wget \
     gnupg \
     ca-certificates \
@@ -39,10 +35,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdg-utils \
     # Cleanup
     && rm -rf /var/lib/apt/lists/*
-
-# Set Chromium path for nodriver
-ENV CHROME_BIN=/usr/bin/chromium \
-    CHROMIUM_FLAGS="--no-sandbox --disable-dev-shm-usage"
 
 # ============================================
 # Stage 2: Builder - Install dependencies
