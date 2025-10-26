@@ -111,7 +111,7 @@ async def get_task_status(task_id: str) -> TaskStatusResponse:
         from app.celery_app.celery_config import celery_app
 
         # Get task result
-        task_result: Any = celery_app.AsyncResult(task_id)
+        task_result = celery_app.AsyncResult(task_id)
 
         if not task_result:
             raise HTTPException(
