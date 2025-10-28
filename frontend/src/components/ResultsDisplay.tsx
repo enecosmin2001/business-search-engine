@@ -9,7 +9,11 @@ import {
   Briefcase,
   Download,
   ExternalLink,
-  TrendingUp
+  TrendingUp,
+  Facebook,
+  Linkedin,
+  Mail,
+  Home
 } from 'lucide-react';
 import type { CompanyInfo } from '@/types';
 import {
@@ -56,9 +60,18 @@ export default function ResultsDisplay({ companyInfo, taskInfo }: ResultsDisplay
             </div>
             {companyInfo.legal_name && companyInfo.marketing_name !== companyInfo.legal_name && (
               <p className="text-sm text-gray-600 mb-2">
-                Legal Name: {companyInfo.legal_name}
+                Legal Name: <span className="font-medium">{companyInfo.legal_name}</span>
               </p>
             )}
+
+            {/* SEO Description */}
+            {companyInfo.seo_description && (
+              <p className="text-sm text-gray-700 mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                {companyInfo.seo_description}
+              </p>
+            )}
+
+            {/* Full Description */}
             {companyInfo.description && (
               <p className="text-gray-700 mt-4 leading-relaxed">
                 {companyInfo.description}
@@ -78,7 +91,7 @@ export default function ResultsDisplay({ companyInfo, taskInfo }: ResultsDisplay
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex flex-wrap gap-3">
           {companyInfo.website && (
             <a
               href={companyInfo.website}
@@ -98,7 +111,20 @@ export default function ResultsDisplay({ companyInfo, taskInfo }: ResultsDisplay
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-[#0A66C2] text-white rounded-lg hover:bg-[#004182] transition-colors"
             >
+              <Linkedin className="w-4 h-4" />
               LinkedIn
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+          {companyInfo.facebook_url && (
+            <a
+              href={companyInfo.facebook_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#1877F2] text-white rounded-lg hover:bg-[#145dbf] transition-colors"
+            >
+              <Facebook className="w-4 h-4" />
+              Facebook
               <ExternalLink className="w-3 h-3" />
             </a>
           )}
@@ -114,6 +140,71 @@ export default function ResultsDisplay({ companyInfo, taskInfo }: ResultsDisplay
 
       {/* Info Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Detailed Address Section */}
+        {(companyInfo.full_address || companyInfo.street_address || companyInfo.city) && (
+            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <div className="flex items-center gap-2 mb-4">
+                <Home className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Address Details</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {companyInfo.full_address && (
+                <div className="col-span-2">
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+                    Full Address
+                    </span>
+                    <span className="text-sm text-gray-900">{companyInfo.full_address}</span>
+                </div>
+                )}
+
+                {companyInfo.street_address && (
+                <div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+                    Street Address
+                    </span>
+                    <span className="text-sm text-gray-900">{companyInfo.street_address}</span>
+                </div>
+                )}
+
+                {companyInfo.city && (
+                <div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+                    City
+                    </span>
+                    <span className="text-sm text-gray-900">{companyInfo.city}</span>
+                </div>
+                )}
+
+                {companyInfo.state && (
+                <div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+                    State/Province
+                    </span>
+                    <span className="text-sm text-gray-900">{companyInfo.state}</span>
+                </div>
+                )}
+
+                {companyInfo.country && (
+                <div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+                    Country
+                    </span>
+                    <span className="text-sm text-gray-900">{companyInfo.country}</span>
+                </div>
+                )}
+
+                {companyInfo.postal_code && (
+                <div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+                    Postal Code
+                    </span>
+                    <span className="text-sm text-gray-900">{companyInfo.postal_code}</span>
+                </div>
+                )}
+            </div>
+            </div>
+        )}
         {/* Website */}
         {companyInfo.website && (
           <InfoCard
@@ -139,9 +230,14 @@ export default function ResultsDisplay({ companyInfo, taskInfo }: ResultsDisplay
             icon={<Users className="w-5 h-5" />}
             label="Employees"
             value={
-              companyInfo.employee_count
-                ? formatNumber(companyInfo.employee_count)
-                : companyInfo.employee_range
+              <div>
+                {companyInfo.employee_count && (
+                  <div className="font-semibold">{formatNumber(companyInfo.employee_count)}+</div>
+                )}
+                {companyInfo.employee_range && (
+                  <div className="text-sm text-gray-600">Range: {companyInfo.employee_range}</div>
+                )}
+              </div>
             }
           />
         )}
@@ -170,15 +266,6 @@ export default function ResultsDisplay({ companyInfo, taskInfo }: ResultsDisplay
             icon={<MapPin className="w-5 h-5" />}
             label="Headquarters"
             value={companyInfo.headquarters}
-          />
-        )}
-
-        {/* Processing Time */}
-        {taskInfo.duration && (
-          <InfoCard
-            icon={<TrendingUp className="w-5 h-5" />}
-            label="Processing Time"
-            value={formatDuration(taskInfo.duration)}
           />
         )}
       </div>

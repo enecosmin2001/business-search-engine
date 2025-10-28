@@ -37,7 +37,7 @@ services:
       - SCRAPER_HEADLESS=true
       - API_RELOAD=false
     volumes:
-      - ./backend/app:/app/app  # Mount source for development
+      - ./backend/app:/app/app
       - ./backend/logs:/app/logs
     depends_on:
       redis:
@@ -79,7 +79,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  # Celery Beat (Optional - for scheduled tasks)
+  # Celery Beat (Optional)
   celery-beat:
     build:
       context: ./backend
@@ -100,7 +100,7 @@ services:
     networks:
       - business-search-net
 
-  # Celery Flower - Monitoring Dashboard (Optional)
+  # Flower (Optional)
   flower:
     build:
       context: ./backend
@@ -120,7 +120,7 @@ services:
     networks:
       - business-search-net
 
-  # Frontend - Next.js Application
+  # Frontend
   frontend:
     build:
       context: ./frontend

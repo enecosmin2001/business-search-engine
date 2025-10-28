@@ -13,13 +13,21 @@ export interface CompanyInfo {
   legal_name: string | null;
   marketing_name: string | null;
   website: string | null;
+  linkedin_url: string | null;
+  facebook_url: string | null;
   employee_count: number | null;
   employee_range: string | null;
   industry: string | null;
   founded_year: number | null;
   headquarters: string | null;
+  full_address: string | null;
+  street_address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postal_code: string | null;
+  seo_description: string | null;
   description: string | null;
-  linkedin_url: string | null;
   confidence_score: number | null;
   additional_data?: Record<string, any>;
 }
