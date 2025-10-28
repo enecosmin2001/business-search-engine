@@ -11,6 +11,7 @@ from typing import Any
 
 import nodriver as uc
 
+from app.config import settings
 from app.scraper.utils import html_to_markdown
 
 # -------------------------------------------------------------------------
@@ -164,14 +165,14 @@ class GoogleAIScraper:
         for _idx, (keys, prompt) in enumerate(questions, start=1):
             question = f"Keep the answer short and direct. What are the {keys}? {prompt}"
             await self._ask(question)
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
 
     async def _ask(self, question: str):
         """Send a question to the Google AI input."""
         search_bar = await self.tab.find(text="ask", best_match=True)
         if not search_bar:
             raise RuntimeError("Could not locate the AI search bar.")
-        await search_bar.mouse_click()
+
         await asyncio.sleep(1)
         await search_bar.send_keys(question)
         await self.tab.send(
@@ -193,9 +194,9 @@ class CompanyScraper:
     """High-level interface to scrape company info."""
 
     @staticmethod
-    async def scrape_async(query: str, timeout: int = 30) -> dict[str, Any]:
+    async def scrape_async(query: str, timeout: int = 60) -> dict[str, Any]:
         _logger.info(f"Starting company info scraping for: {query}")
-        async with BrowserManager() as browser:
+        async with BrowserManager(headless=settings.ENVIRONMENT == "production") as browser:
             scraper = GoogleAIScraper(browser, query)
             markdown = await asyncio.wait_for(scraper.scrape(), timeout=timeout)
         return {"query": query, "content_markdown": markdown}
