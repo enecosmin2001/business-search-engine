@@ -16,8 +16,7 @@ from app.scraper.utils import html_to_markdown
 # -------------------------------------------------------------------------
 # Setup Logging
 # -------------------------------------------------------------------------
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------
@@ -52,7 +51,7 @@ class BrowserManager:
 
     async def _start_browser(self):
         """Start browser with stealth settings."""
-        logger.info("Launching browser...")
+        _logger.info("Launching browser...")
         self.browser = await uc.start(
             headless=self.headless,
             sandbox=False,
@@ -95,16 +94,16 @@ class BrowserManager:
                 )
                 await self.tab.evaluate(script)
             except Exception as e:
-                logger.warning(f"Failed to inject stealth JS: {e}")
+                _logger.warning(f"Failed to inject stealth JS: {e}")
 
     async def stop(self):
         """Stop browser gracefully."""
         if self.browser:
             try:
                 self.browser.stop()
-                logger.info("Browser closed.")
+                _logger.info("Browser closed.")
             except Exception as e:
-                logger.warning(f"Failed to stop browser: {e}")
+                _logger.warning(f"Failed to stop browser: {e}")
 
 
 # -------------------------------------------------------------------------
@@ -153,7 +152,7 @@ class GoogleAIScraper:
                 "legal_business_name and marketing_name (short name or DBA)",
                 f"Key-value format only. Company: {self.query}",
             ),
-            ("website_url, linkedin_url, facebook_url", "Provide URLs only in key-value format."),
+            ("website_url, linkedin_url, facebook_url", "Return all values in key-value format."),
             (
                 "industry, employees_count, employee_range, full_address, "
                 "street_address, city, state, country, postal_code, "
@@ -195,7 +194,7 @@ class CompanyScraper:
 
     @staticmethod
     async def scrape_async(query: str, timeout: int = 30) -> dict[str, Any]:
-        logger.info(f"Starting company info scraping for: {query}")
+        _logger.info(f"Starting company info scraping for: {query}")
         async with BrowserManager() as browser:
             scraper = GoogleAIScraper(browser, query)
             markdown = await asyncio.wait_for(scraper.scrape(), timeout=timeout)
