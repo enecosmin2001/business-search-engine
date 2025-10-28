@@ -113,12 +113,10 @@ def process_company_search(
         )
 
         # Import here to avoid circular imports
-        from app.scraper.nodriver_scraper import scrape_company_info
+        from app.scraper.nodriver_scraper import CompanyScraper
 
-        scraped_data = scrape_company_info(
+        scraped_data = CompanyScraper.scrape(
             query=query,
-            include_website=include_website,
-            include_linkedin=include_linkedin,
             timeout=timeout or settings.SCRAPER_TIMEOUT,
         )
 
