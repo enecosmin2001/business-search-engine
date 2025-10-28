@@ -103,6 +103,16 @@ class CompanyInfo(BaseModel):
         description="Company website URL",
     )
 
+    linkedin_url: HttpUrl | None = Field(
+        default=None,
+        description="LinkedIn company page URL",
+    )
+
+    facebook_url: HttpUrl | None = Field(
+        default=None,
+        description="Facebook company page URL",
+    )
+
     employee_count: int | None = Field(
         default=None,
         ge=0,
@@ -131,15 +141,45 @@ class CompanyInfo(BaseModel):
         description="Headquarters location (city, country)",
     )
 
+    full_address: str | None = Field(
+        default=None,
+        description="Full address including street, city, state, country, postal code",
+    )
+
+    street_address: str | None = Field(
+        default=None,
+        description="Street address only",
+    )
+
+    city: str | None = Field(
+        default=None,
+        description="City of headquarters",
+    )
+
+    state: str | None = Field(
+        default=None,
+        description="State/province of headquarters",
+    )
+
+    country: str | None = Field(
+        default=None,
+        description="Country of headquarters",
+    )
+
+    postal_code: str | None = Field(
+        default=None,
+        description="Postal code if available",
+    )
+
+    seo_description: str | None = Field(
+        default=None,
+        description="Short SEO description of the company",
+    )
+
     description: str | None = Field(
         default=None,
         max_length=1000,
         description="Brief company description",
-    )
-
-    linkedin_url: HttpUrl | None = Field(
-        default=None,
-        description="LinkedIn company page URL",
     )
 
     confidence_score: float | None = Field(
@@ -158,17 +198,25 @@ class CompanyInfo(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "legal_name": "Google LLC",
-                    "marketing_name": "Google",
-                    "website": "https://www.google.com",
-                    "employee_count": 150000,
-                    "employee_range": "10000+",
-                    "industry": "Technology / Internet",
-                    "founded_year": 1998,
-                    "headquarters": "Mountain View, California, USA",
-                    "description": "Multinational technology company specializing in Internet-related services and products",
-                    "linkedin_url": "https://www.linkedin.com/company/google",
-                    "confidence_score": 0.95,
+                    "legal_name": "Argyle Systems Inc.",
+                    "marketing_name": "Argyle",
+                    "website": "https://argyle.com",
+                    "linkedin_url": "https://www.linkedin.com/company/argylesystems",
+                    "facebook_url": None,
+                    "employee_count": 51,
+                    "employee_range": "51-200",
+                    "industry": "Financial Services / Financial Software",
+                    "founded_year": None,
+                    "headquarters": "New York, USA",
+                    "full_address": "Remote First / Headquarters in New York, NY, USA",
+                    "street_address": None,
+                    "city": "New York",
+                    "state": "New York (NY)",
+                    "country": "United States (USA)",
+                    "postal_code": None,
+                    "seo_description": "Argyle is a payroll connectivity platform that provides direct-source, consumer-permissioned income and employment verifications to automate financial services workflows.",
+                    "description": "Argyle is a payroll connectivity platform that allows businesses to easily access workforce data to verify income and employment, monitor cash-on-hand, and assess credibility. It is used for applications in mortgage, personal lending, tenant screening, and the gig economy.",
+                    "confidence_score": 0.9,
                 }
             ]
         }
