@@ -57,10 +57,10 @@ export default function ProgressTracker({ status }: ProgressTrackerProps) {
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500 ease-out"
+            className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500 ease-out relative"
             style={{ width: `${status.progress}%` }}
           >
-            <div className="w-full h-full bg-white/30 animate-pulse"></div>
+            <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -83,22 +83,19 @@ export default function ProgressTracker({ status }: ProgressTrackerProps) {
             >
               <div
                 className={cn(
-                  'w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all',
+                  'w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all duration-300',
                   isCompleted && 'bg-green-500 text-white',
-                  isActive && 'bg-blue-500 text-white shadow-lg ring-4 ring-blue-100',
+                  isActive && 'bg-blue-500 text-white shadow-lg ring-4 ring-blue-100 animate-pulse',
                   isPending && 'bg-gray-200 text-gray-400'
                 )}
               >
                 <Icon
-                  className={cn(
-                    'w-6 h-6',
-                    isActive && 'animate-pulse'
-                  )}
+                  className="w-6 h-6"
                 />
               </div>
               <span
                 className={cn(
-                  'text-xs font-medium transition-colors',
+                  'text-xs font-medium transition-colors duration-300',
                   isCompleted && 'text-green-600',
                   isActive && 'text-blue-600',
                   isPending && 'text-gray-400'
