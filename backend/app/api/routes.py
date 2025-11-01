@@ -17,9 +17,9 @@ from app.models.schemas import (
     TaskStatusResponse,
 )
 
-router = APIRouter()
-
 _logger = logging.getLogger(__name__)
+
+router = APIRouter()
 
 
 @router.post(
@@ -58,7 +58,7 @@ async def search_company(request: SearchRequest) -> TaskResponse:
         _logger.info(f"Received search request for: {request.query}")
 
         # Create Celery task
-        task = process_company_search.apply_async(  # type: ignore
+        task = process_company_search.apply_async(  # type: ignore[attr-defined]
             kwargs={
                 "query": request.query,
                 "include_website": request.include_website,
@@ -123,6 +123,7 @@ async def get_task_status(task_id: str) -> TaskStatusResponse:
         state_mapping = {
             "PENDING": TaskStatus.PENDING,
             "STARTED": TaskStatus.STARTED,
+            "PROGRESS": TaskStatus.STARTED,  # Custom progress state
             "SUCCESS": TaskStatus.COMPLETED,
             "FAILURE": TaskStatus.FAILED,
             "RETRY": TaskStatus.STARTED,
@@ -136,11 +137,9 @@ async def get_task_status(task_id: str) -> TaskStatusResponse:
             "task_id": task_id,
             "status": task_status,
             "progress": 0,
-            "created_at": (
-                task_result.date_done or task_result.info.get("created_at")
-                if task_result.info
-                else None
-            ),
+            "created_at": task_result.date_done or task_result.info.get("created_at")
+            if task_result.info
+            else None,
         }
 
         # Handle different task states
@@ -152,10 +151,19 @@ async def get_task_status(task_id: str) -> TaskStatusResponse:
                 }
             )
 
-        elif task_result.state == "STARTED":
+        elif task_result.state in ["STARTED", "PROGRESS"]:
             info = task_result.info or {}
+
+            # Get custom status from meta (scraping/processing)
+            custom_status = info.get("status", "started")
+            if custom_status == "scraping":
+                task_status = TaskStatus.SCRAPING
+            elif custom_status == "processing":
+                task_status = TaskStatus.PROCESSING
+
             response_data.update(
                 {
+                    "status": task_status,
                     "progress": info.get("progress", 10),
                     "message": info.get("message", "Task is running"),
                     "started_at": info.get("started_at"),
@@ -170,9 +178,9 @@ async def get_task_status(task_id: str) -> TaskStatusResponse:
                     "message": "Task completed successfully",
                     "result": result.get("company_info") if isinstance(result, dict) else result,
                     "completed_at": task_result.date_done,
-                    "duration_seconds": (
-                        result.get("duration_seconds") if isinstance(result, dict) else None
-                    ),
+                    "duration_seconds": result.get("duration_seconds")
+                    if isinstance(result, dict)
+                    else None,
                 }
             )
 

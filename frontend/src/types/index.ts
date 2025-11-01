@@ -30,6 +30,7 @@ export interface CompanyInfo {
   description: string | null;
   confidence_score: number | null;
   additional_data?: Record<string, any>;
+  sources: string[];
 }
 
 export interface SearchRequest {
