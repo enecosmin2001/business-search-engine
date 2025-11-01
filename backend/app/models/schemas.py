@@ -62,7 +62,7 @@ class SearchRequest(BaseModel):
     timeout: int | None = Field(
         default=None,
         ge=10,
-        le=300,
+        le=1000,
         description="Custom timeout in seconds (10-300)",
     )
 
@@ -194,6 +194,11 @@ class CompanyInfo(BaseModel):
         description="Any additional extracted data",
     )
 
+    sources: list[HttpUrl] = Field(
+        default_factory=list,
+        description="List of URLs where information was found",
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [
@@ -217,6 +222,10 @@ class CompanyInfo(BaseModel):
                     "seo_description": "Argyle is a payroll connectivity platform that provides direct-source, consumer-permissioned income and employment verifications to automate financial services workflows.",
                     "description": "Argyle is a payroll connectivity platform that allows businesses to easily access workforce data to verify income and employment, monitor cash-on-hand, and assess credibility. It is used for applications in mortgage, personal lending, tenant screening, and the gig economy.",
                     "confidence_score": 0.9,
+                    "sources": [
+                        "https://argyle.com",
+                        "https://www.linkedin.com/company/argylesystems",
+                    ],
                 }
             ]
         }

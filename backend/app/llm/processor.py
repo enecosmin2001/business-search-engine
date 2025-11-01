@@ -61,61 +61,26 @@ class LLMProcessor:
         if len(cleaned_markdown) > max_context_length:
             cleaned_markdown = cleaned_markdown[:max_context_length] + "\n\n[Content truncated...]"
 
-        prompt = f"""You are a business information extraction assistant. Your task is to extract structured company information from the provided web content.
+        prompt = f"""Extract structured business data from the web content below and return a single valid JSON object.
 
-        Search Query: {query}
+        **Search Query:** {query}
 
-        Web Content:
+        **Web Content:**
         {cleaned_markdown}
 
-        Extract the following information about the company and return it as a JSON object.
+        ---
 
-        CRITICAL INSTRUCTIONS FOR EACH FIELD:
-
-        1. legal_name: The official registered business name (e.g., "Argyle Systems Inc.")
-        2. marketing_name: The common brand name or DBA (e.g., "Argyle")
-        3. website: Full URL starting with https:// (e.g., "https://argyle.com")
-        4. linkedin_url: LinkedIn company page URL (e.g., "https://www.linkedin.com/company/argylesystems")
-        5. facebook_url: Facebook page URL or null if not found
-        6. employee_count: INTEGER ONLY - extract the exact number of employees. If no numeric data, use null
-        7. employee_range: STRING ONLY - the exact range as text (e.g., "51-200", "201-500", "1000+"). If not found, use null
-        8. industry: Primary business sector (e.g., "Financial Services / Financial Software")
-        9. founded_year: 4-digit integer year (e.g., 2018) or null
-        10. headquarters: City and country (e.g., "New York, USA")
-        11. full_address: Complete address with all available components
-        12. street_address: Street number and name only, or null
-        13. city: City name only (e.g., "New York")
-        14. state: State/province (e.g., "New York" or "NY")
-        15. country: Country name (e.g., "United States" or "USA")
-        16. postal_code: Postal/ZIP code or null
-        17. seo_description: One-sentence company description from SEO meta
-        18. description: Detailed 2-3 sentence description of what the company does
-        19. confidence_score: Float 0.0-1.0 based on data completeness
-
-        PARSING RULES:
-        - Never put ranges in employee_count field - it must be an integer or null
-        - Never put integers in employee_range field - it must be a string range or null
-        - If address says "N/A" or "Remote First", set those specific fields to null
-        - Extract city/state/country even if full street address is unavailable
-
-        CONFIDENCE SCORE GUIDELINES:
-        - 0.9-1.0: All major fields present with verified data
-        - 0.7-0.9: Most fields present, minor fields missing
-        - 0.5-0.7: Several important fields missing or uncertain
-        - 0.3-0.5: Only basic information available
-        - 0.0-0.3: Very limited or unreliable data
-
-        Return ONLY valid JSON with this exact structure:
+        **Required JSON Schema:**
         {{
             "legal_name": "string or null",
             "marketing_name": "string or null",
             "website": "string or null",
             "linkedin_url": "string or null",
             "facebook_url": "string or null",
-            "employee_count": integer or null,
+            "employee_count": "integer or null",
             "employee_range": "string or null",
             "industry": "string or null",
-            "founded_year": integer or null,
+            "founded_year": "integer or null",
             "headquarters": "string or null",
             "full_address": "string or null",
             "street_address": "string or null",
@@ -125,10 +90,30 @@ class LLMProcessor:
             "postal_code": "string or null",
             "seo_description": "string or null",
             "description": "string or null",
-            "confidence_score": float
+            "confidence_score": "float (0.0-1.0)",
+            "sources": ["array of URLs"]
         }}
 
-        JSON Response:"""
+        ---
+
+        **Extraction Rules:**
+
+        1. **Prefer explicit data** over inference; use `null` if missing/uncertain
+        2. **Normalize URLs** to include `https://` prefix
+        3. **Employee data:**
+        - Exact number → `employee_count` (integer), `employee_range` = null
+        - Range/phrase (e.g. "51-200", "100+") → store original text in `employee_range`, estimate midpoint/lower bound for `employee_count`
+        4. **Addresses:** Use null for "Remote", "N/A", or unknown values
+        5. **Sources:** List all valid URLs found (website, LinkedIn, etc.)
+        6. **Confidence score:**
+        - 0.9-1.0: All major fields present
+        - 0.7-0.9: Most fields present, minor gaps
+        - 0.5-0.7: Basic data only
+        - 0.3-0.5: Minimal info
+        - <0.3: Very incomplete
+
+        **Output only valid JSON** — no markdown fences, comments, or explanations.
+        """
         return prompt
 
     def extract_with_ollama(self, prompt: str) -> dict[str, object]:
@@ -144,10 +129,7 @@ class LLMProcessor:
             response = client.generate(
                 model=self.model,
                 prompt=prompt,
-                options={
-                    "temperature": settings.LLM_TEMPERATURE,
-                    "num_predict": settings.LLM_MAX_TOKENS,
-                },
+                options={"temperature": 0.0, "format": "json"},
             )
 
             response_text = response.get("response", "")
@@ -208,6 +190,7 @@ class LLMProcessor:
                 "seo_description": None,
                 "description": None,
                 "confidence_score": 0.0,
+                "sources": [],
             }
 
     def extract(self, query: str, scraped_markdown: str) -> dict[str, Any]:
