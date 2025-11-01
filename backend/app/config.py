@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     # ============================================
     # Web Scraping Settings
     # ============================================
-    SCRAPER_TIMEOUT: int = 30
+    SCRAPER_TIMEOUT: int = 1000
     SCRAPER_MAX_RETRIES: int = 3
     SCRAPER_RETRY_DELAY: int = 2
     SCRAPER_USER_AGENT: str = (

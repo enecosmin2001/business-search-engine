@@ -12,7 +12,6 @@ from celery import Task
 
 from app.celery_app.celery_config import celery_app
 from app.config import settings
-from app.models.schemas import TaskStatus
 
 _logger = logging.getLogger(__name__)
 
@@ -91,21 +90,23 @@ def process_company_search(
     _logger.info(f"Starting company search task {task_id} for query: {query}")
 
     try:
-        # Update task state: STARTED
+        # Update task state: STARTED (10% progress)
         self.update_state(
-            state=TaskStatus.STARTED.value.upper(),
+            state="PROGRESS",
             meta={
+                "status": "started",
                 "progress": 10,
                 "message": f"Starting search for '{query}'",
                 "started_at": created_at.isoformat(),
             },
         )
 
-        # Step 1: Web Scraping (40% of progress)
+        # Step 1: Web Scraping (20-60% progress)
         _logger.info(f"Task {task_id}: Starting web scraping phase")
         self.update_state(
-            state=TaskStatus.SCRAPING.value.upper(),
+            state="PROGRESS",
             meta={
+                "status": "scraping",
                 "progress": 20,
                 "message": "Scraping web for company information",
                 "started_at": created_at.isoformat(),
@@ -122,19 +123,21 @@ def process_company_search(
 
         _logger.info(f"Task {task_id}: Web scraping completed")
         self.update_state(
-            state=TaskStatus.SCRAPING.value.upper(),
+            state="PROGRESS",
             meta={
+                "status": "scraping",
                 "progress": 60,
-                "message": "Web scraping completed, preparing data for processing",
+                "message": "Web scraping completed, preparing data",
                 "started_at": created_at.isoformat(),
             },
         )
 
-        # Step 2: LLM Processing (40% of progress)
+        # Step 2: LLM Processing (70-90% progress)
         _logger.info(f"Task {task_id}: Starting LLM processing phase")
         self.update_state(
-            state=TaskStatus.PROCESSING.value.upper(),
+            state="PROGRESS",
             meta={
+                "status": "processing",
                 "progress": 70,
                 "message": "Processing data with AI",
                 "started_at": created_at.isoformat(),
@@ -151,8 +154,9 @@ def process_company_search(
 
         _logger.info(f"Task {task_id}: LLM processing completed")
         self.update_state(
-            state=TaskStatus.PROCESSING.value.upper(),
+            state="PROGRESS",
             meta={
+                "status": "processing",
                 "progress": 90,
                 "message": "Finalizing results",
                 "started_at": created_at.isoformat(),
@@ -183,8 +187,9 @@ def process_company_search(
 
         # Update state to FAILURE with error details
         self.update_state(
-            state=TaskStatus.FAILED.value.upper(),
+            state="FAILURE",
             meta={
+                "status": "failed",
                 "progress": 0,
                 "message": f"Task failed: {str(e)}",
                 "error": str(e),
@@ -192,6 +197,8 @@ def process_company_search(
                 "started_at": created_at.isoformat(),
                 "failed_at": datetime.now(UTC).isoformat(),
                 "duration_seconds": round(duration, 2),
+                "exc_type": type(e).__name__,
+                "exc_message": e.__str__(),
             },
         )
 
