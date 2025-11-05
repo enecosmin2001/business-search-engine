@@ -5,12 +5,23 @@ Processes scraped data using local or cloud LLM to extract structured informatio
 
 import json
 import logging
+import re
+from pathlib import Path
 from typing import Any
 
 from app.config import settings
 from app.models.schemas import CompanyInfo
 
 _logger = logging.getLogger(__name__)
+
+# RFC 3986–inspired URL regex (handles http, https, www, query params, fragments, ports, etc.)
+URL_REGEX = re.compile(
+    r"\b(?:(?:https?|ftp):\/\/|www\.)"
+    r"[-a-zA-Z0-9@:%._\+~#=]{1,256}"
+    r"\.[a-zA-Z0-9()]{1,6}\b"
+    r"([-a-zA-Z0-9()@:%_\+.~#?&//=]*)",
+    re.IGNORECASE,
+)
 
 
 class LLMProcessor:
@@ -36,35 +47,83 @@ class LLMProcessor:
         self.model = model
         self.base_url = base_url or settings.LLM_BASE_URL
 
-    def clean_markdown(self, markdown: str) -> str:
+    def clean_markdown(self, markdown: str) -> tuple[str, list[str]]:
         """
-        Clean and preprocess markdown content.
+        Clean and preprocess scraped markdown content.
+        Returns a tuple: (cleaned_markdown, extracted_urls)
         """
-        cleaned = markdown.replace("\n\n", "\n").strip()
 
-        # Extract only the relevant content if markers exist
-        start_marker = "What is the legal_business_name"
-        end_marker = "AI responses may include mistakes"
-        start_idx = cleaned.find(start_marker)
-        end_idx = cleaned.rfind(end_marker)
-        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-            cleaned = cleaned[start_idx + len(start_marker) : end_idx].strip()
+        import re
 
-        return cleaned
+        cleaned = markdown.replace("\r", "").replace("\n\n", "\n").strip()
+
+        # --- Remove Google / UI / boilerplate noise ---
+        noise_patterns = [
+            r"Please click.*?seconds\.",
+            r"# Accessibility links.*?(AI Mode|Start new search)",
+            r"(Start new search|Open AI Mode history|Delete this search\?.*?Cancel)",
+            r"(Shared public links.*?Delete all\nCancel)",
+            r"Thank you.*?Privacy.*?Close",
+            r"Map data ©.*?(AI responses|AI-generated responses).*?\.",
+            r"\b(Learn more|Report a problem)\b",
+            r"\b(\d+\s+sites|Show all)\b",
+        ]
+        for pattern in noise_patterns:
+            cleaned = re.sub(pattern, "", cleaned, flags=re.S | re.I)
+
+        # --- Extract and remove URLs ---
+        urls, cleaned = self.extract_and_clean_urls(cleaned)
+
+        # --- Deduplicate lines ---
+        seen = set()
+        lines = []
+        for line in cleaned.split("\n"):
+            line = line.strip()
+            if line and line not in seen:
+                seen.add(line)
+                lines.append(line)
+        cleaned = "\n".join(lines)
+
+        cleaned = re.sub(r"\n{2,}", "\n\n", cleaned).strip()
+
+        return cleaned, urls
+
+    def extract_and_clean_urls(self, text: str):
+        """
+        Extracts all full URLs from text and removes them cleanly.
+        Returns (urls, cleaned_text)
+        """
+        urls = re.findall(URL_REGEX, text)
+
+        # `re.findall` returns only captured groups if parentheses are present,
+        # so we use re.finditer instead to get full matches.
+        urls = [m.group(0) for m in re.finditer(URL_REGEX, text)]
+
+        cleaned_text = re.sub(URL_REGEX, "", text)
+        cleaned_text = re.sub(r"\s+", " ", cleaned_text).strip()
+
+        return urls, cleaned_text
 
     def create_extraction_prompt(self, query: str, markdown: str) -> str:
         """
         Create a prompt for the LLM to extract company information.
         """
-        cleaned_markdown = self.clean_markdown(markdown)
-        max_context_length = 8000
-        if len(cleaned_markdown) > max_context_length:
-            cleaned_markdown = cleaned_markdown[:max_context_length] + "\n\n[Content truncated...]"
+        cleaned_markdown, urls = self.clean_markdown(markdown)
 
-        prompt = f"""Extract structured business data from the web content below and return a single valid JSON object.
+        prompt = f"""
+        You are an AI data extractor. Analyze the provided web content and extract **structured business information** as a single, valid JSON object.
+
+        Be exhaustive and prefer to fill as many fields as possible instead of leaving them null.
+        If multiple possible values appear, choose the one most consistent across sources.
+        Normalize and clean all text values.
+        Use URLs in the text to infer social or company links where possible.
+        If data is ambiguous, include the most probable option and lower the confidence score accordingly.
+        Do not include explanations or markdown — output only the JSON object.
+
+        ---
 
         **Search Query:** {query}
-
+        **URLs Found:** {urls}
         **Web Content:**
         {cleaned_markdown}
 
@@ -98,22 +157,47 @@ class LLMProcessor:
 
         **Extraction Rules:**
 
-        1. **Prefer explicit data** over inference; use `null` if missing/uncertain
-        2. **Normalize URLs** to include `https://` prefix
-        3. **Employee data:**
-        - Exact number → `employee_count` (integer), `employee_range` = null
-        - Range/phrase (e.g. "51-200", "100+") → store original text in `employee_range`, estimate midpoint/lower bound for `employee_count`
-        4. **Addresses:** Use null for "Remote", "N/A", or unknown values
-        5. **Sources:** List all valid URLs found (website, LinkedIn, etc.)
-        6. **Confidence score:**
-        - 0.9-1.0: All major fields present
-        - 0.7-0.9: Most fields present, minor gaps
-        - 0.5-0.7: Basic data only
-        - 0.3-0.5: Minimal info
-        - <0.3: Very incomplete
+        1. **Data completeness**
+        - Extract every distinct data point that appears relevant.
+        - Prefer explicit data over inferred values.
+        - Use `null` only if the value is missing or unclear.
 
-        **Output only valid JSON** — no markdown fences, comments, or explanations.
+        2. **URLs & Sources**
+        - Normalize all URLs to include the `https://` prefix.
+        - Use any valid link found in content (website, LinkedIn, Facebook, Crunchbase, etc.) as potential sources.
+        - Use only URLs that clearly relate to the company by having the company name in the domain or page title.
+        - Deduplicate URLs.
+
+        3. **Employees**
+        - Exact number → `employee_count` (integer), `employee_range` = null.
+        - Range/phrase (e.g. "51-200", "100+") → store text in `employee_range`, estimate midpoint or lower bound for `employee_count`.
+
+        4. **Addresses**
+        - Combine available pieces into `headquarters` and `full_address`.
+        - Use `null` for “Remote”, “N/A”, or unknown values.
+
+        5. **Confidence scoring**
+        - 0.9-1.0 → All major fields present.
+        - 0.7-0.9 → Most fields present, minor gaps.
+        - 0.5-0.7 → Basic company info only.
+        - 0.3-0.5 → Minimal or partial info.
+        - <0.3 → Very incomplete.
+
+        6. **Final Output**
+        - Return **only valid JSON**, no markdown, comments, or prose.
+        - Do not include any text before or after the JSON.
+
+        ---
+
+        Now extract the business data from the provided content and return **a single JSON object** following the schema exactly.
+
         """
+
+        # save prompt for debugging
+        save_path = Path("./logs/llm_prompts")
+        save_path.mkdir(parents=True, exist_ok=True)
+        prompt_file = save_path / f"extraction_prompt_{query}.txt"
+        prompt_file.write_text(prompt, encoding="utf-8")
         return prompt
 
     def extract_with_ollama(self, prompt: str) -> dict[str, object]:
@@ -129,7 +213,7 @@ class LLMProcessor:
             response = client.generate(
                 model=self.model,
                 prompt=prompt,
-                options={"temperature": 0.0, "format": "json"},
+                options={"temperature": 0.0, "format": "json", "num_ctx": 16384},
             )
 
             response_text = response.get("response", "")
