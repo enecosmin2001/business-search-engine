@@ -173,18 +173,12 @@ class GoogleAIScraper:
     async def _ask_questions(self):
         """Ask structured questions about the company."""
         await self._ask(
-            f"What are the legal_business_name, marketing_name for the company <{self.query}> ? Respond in key-value format."
+            f"""
+                What are the : Company Name Website URL Primary Domain Location (city, state, country, street address, postal code) Number of Employees (total and by department) Industry (primary industry and keywords) Annual Revenue Phone Number (corporate general directory) Technologies Used (tech stack) Total Funding Amount Latest Funding Stage Latest Funding Amount Latest Funding Date Founded Year Company Description LinkedIn URL Twitter URL Facebook URL Number of Job Postings Sample Job Posting Titles Publicly Traded Status (symbol, exchange) Buying Intent Signals (identifies companies actively researching products/services) Hiring Trends Website Visitor Tracking Data (identifies anonymous visitors) Company Score (based on custom lead scoring models) Number of Retail Locations Number of Languages (used for business) for the company < {self.query} > ?
+            """
         )
         await self.wait_until_text_appears_n_times("AI responses may include mistakes", 1)
-        await self._ask(
-            "What are the industry, current_number_of_employees, full_address, street_address, city, state, country, postal_code, sso_description, description?"
-            "Respond in key-value format."
-        )
-        await self.wait_until_text_appears_n_times("AI responses may include mistakes", 2)
-        await self._ask(
-            f"What are the website_url, linkedin_url and facebook_url for the company <{self.query}> ? Respond in key-value format"
-        )
-        await self.wait_until_text_appears_n_times("AI responses may include mistakes", 3)
+        await asyncio.sleep(1)
 
     async def _ask(self, question: str):
         """Send a question to the Google AI input."""
@@ -214,13 +208,21 @@ class CompanyScraper:
     """High-level interface to scrape company info."""
 
     @staticmethod
-    async def scrape_async(query: str, timeout: int = 1000) -> dict[str, Any]:
+    async def scrape_async(
+        query: str, timeout: int = 1000, headless: bool = True
+    ) -> dict[str, Any]:
         _logger.info(f"Starting company info scraping for: {query}")
-        async with BrowserManager(headless=True) as browser:
+        async with BrowserManager(headless=headless) as browser:
             scraper = GoogleAIScraper(browser, query)
             markdown = await asyncio.wait_for(scraper.scrape(), timeout=timeout)
+
+        # save markdown for debugging
+        save_path = Path("./logs/scraped_markdown")
+        save_path.mkdir(parents=True, exist_ok=True)
+        md_file = save_path / f"{query.replace(' ', '_')}_scraped.md"
+        md_file.write_text(markdown, encoding="utf-8")
         return {"query": query, "content_markdown": markdown}
 
     @staticmethod
-    def scrape(query: str, timeout: int = 1000) -> dict[str, Any]:
-        return asyncio.run(CompanyScraper.scrape_async(query, timeout))
+    def scrape(query: str, timeout: int = 1000, headless: bool = True) -> dict[str, Any]:
+        return asyncio.run(CompanyScraper.scrape_async(query, timeout, headless))
